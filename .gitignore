@@ -8,3 +8,6 @@
 # 系统垃圾
 .DS_Store
 .trash/
+
+# Claudian AI插件会话缓存
+.claudian/
