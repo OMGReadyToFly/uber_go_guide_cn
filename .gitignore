@@ -1,1 +1,10 @@
-.idea
+# Obsidian 会话布局（必加）
+.obsidian/workspace.json
+.obsidian/workspace-mobile.json
+
+# 第三方插件本体
+.obsidian/plugins/
+
+# 系统垃圾
+.DS_Store
+.trash/
