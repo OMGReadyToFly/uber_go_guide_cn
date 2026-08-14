@@ -242,8 +242,36 @@ change.md
 
 接口实质上在底层用两个字段表示：
 
-1. 一个指向某些特定类型信息的指针。您可以将其视为"type"。
-2. 数据指针。如果存储的数据是指针，则直接存储。如果存储的数据是一个值，则存储指向该值的指针。
+1. type 指针：一个指向某些特定类型信息的指针。
+2. data 指针：如果存储的数据是指针，则直接存储；如果存储的数据是一个值，则存储指向该值的指针。
+
+```go
+type I interface {
+	Set()
+}
+
+type S struct {
+	x int
+}
+
+// 指针接收者，能改数据
+func (s *S) Set() {
+	s.x = 99
+}
+
+// 接口作为值传递，不能定义成func f(i *I)
+func f(i I) {
+	i.Set()
+}
+
+func main() {
+	m := &S{x: 1}    // m 是指针
+	var i I = m      // 指针赋值给接口 「type指针：指向 `*S` 的类型信息」
+					 //「data指针：直接存了`m`这个地址（也就是结构体实例的指针）」
+	f(i)             // 值传递 这里发生了「值拷贝」，但拷贝的不是那个庞大的结构体，而是「接口变量本身」
+	fmt.Println(m.x) // 99
+}
+```
 
 如果希望接口方法修改基础数据，则必须使用指针传递 (将对象指针赋值给接口变量)。
 
@@ -265,12 +293,14 @@ func (s *S2) f() {}
 var f1 F = S1{}
 var f2 F = &S2{}
 ```
-永远不要使用指向 interface 的指针，这个是没有意义的。在 go 语言中，接口本身就是引用类型，换句话说，接口类型本身就是一个指针。对于我的需求，其实 test 的参数只要是 myinterface 就可以了，只需要在传值的时候，传*mystruct 类型（也只能传*mystruct 类型）
+
+永远不要使用指向 interface 的指针，这个是没有意义的。在 go 语言中，接口本身就是引用类型，换句话说，接口类型本身就是一个指针。对于我的需求，其实 test 的参数只要是 myinterface 就可以了。调用时，你可以直接传 `*mystruct`（Go 会自动转换为接口），也可以传一个已经声明为 `myinterface` 的变量。不需要、也不应该用 `*myinterface`。
+
 ```go
 type myinterface interface{
 	print()
 }
-func test(value *myinterface){
+func test(value *myinterface){ // 错误，正确应为：func test(value myinterface)
 	//someting to do ...
 }
 
@@ -284,8 +314,14 @@ func (this *mystruct) print(){
 }
 func main(){
 	m := &mystruct{0}
-	test(m)  // 错误
-	test(*m) // 错误
+	
+	test(m)  // 方式一：直接传 *mystruct（m 的类型是 *mystruct，值是结构体的地址）
+	
+	var i myinterface = m // 方式二：先赋值给接口变量，再传接口
+	test(i)
+	
+	test(*m) // 错误调用方式
+	test(*i) // 错误调用方式
 }
 ```
 
